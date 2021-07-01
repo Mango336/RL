@@ -1,46 +1,63 @@
-import numpy as np
 import gym
-from gridworld import CliffWakingWapper
-from sample_read_data import *
+from agent import SarsaAgent
+import time
+# from sample_read_data import *  # load data
 
+def run_episode(env, agent, render=False):
+    total_steps = 0  # 记录每个episode走了多少step
+    total_reward = 0
+    obs = env.reset()  # 重置环境 重新开始一个新的episode
+    action = agent.sample(obs)  # agent根据算法选择一个动作输出
+    while True:
+        next_obs, reward, done, _ = env.step(action)  # 与环境进行一个交互
+        next_action = agent.sample(next_obs)  # 根据算法选择一个动作
+        agent.learn(obs, action, reward, next_obs, next_action, done)  # 训练Sarsa
 
-class SarsaAgent(object):
-    def __init__(self, obs_n, act_n, learning_rate=0.01, gamma=0.9, e_greed=0.1):
-        self.act_n = act_n  # 动作维度 有几个动作可选
-        self.lr = learning_rate  # 学习率
-        self.gamma = gamma  # reward的衰减率
-        self.epsilon = e_greed  # 按一定概率随机选动作
-        self.Q = np.zeros((obs_n, act_n))
+        action = next_action
+        obs = next_obs  # 存储上一个观察值
+        total_reward += reward
+        total_steps += 1  # 计算step数
+        if render:
+            env.render()  # 渲染新的一帧图形
+        if done:
+            break
+    return total_reward, total_steps
 
-    # 根据输入观察值 采样输出的动作值
-    def sample(self, obs):
-        if np.random.uniform(0, 1) < (1.0 - self.epsilon):  # 根据table的Q值选动作  uniform(0, 1)=>[0, 1]的随机数
-            action = self.predict(obs)  # 拿到最优动作
+# 查看最后效果
+def test_episode(env, agent):
+    total_reward = 0
+    obs = env.reset()
+    while True:
+        action = agent.predict(obs)  # greedy
+        next_obs, reward, done, _ = env.step(action)
+        total_reward += reward
+        obs = next_obs
+        time.sleep(0.5)
+        env.render()
+        if done:
+            print("test reward = %.lf" % (total_reward))
+            break
+
+def main():
+    # gym创建迷宫环境 is_slipper=False 降低环境难度
+    env = gym.make("FrozenLake-v0", is_slippery=False)  # 0 up, 1 right, 2 down, 3 left
+    # env = gym.make("CliffWalking-v0", is_slippery=False)  # 0 up, 1 right, 2 down, 3 left
+    # 创建agent实例
+    agent = SarsaAgent(obs_n=env.observation_space.n,
+                       act_n=env.action_space.n,
+                       learning_rate=0.01,
+                       gamma=0.9,
+                       e_greed=0.1)
+    is_render = False
+    for episode in range(500):
+        ep_reward, ep_steps = run_episode(env, agent, is_render)
+        print("Epsiode %s: steps = %s , reward = %.lf " % (episode, ep_steps, ep_reward))
+        if episode%20 == 0:  # 每隔20个episode 渲染 看目前效果
+            is_render = True
         else:
-            action = np.random.choice(self.act_n)  # 其他动作也有一定概率随机探索到
-        return action
+            is_render = False
+    # 训练结束 查看算法效果
+    test_episode(env, agent)
 
-    # 根据输入观察值 预测输出的动作值
-    def predict(self, obs):
-        Q_list = self.Q[obs, :]  # Q_list中 行代表状态 列代表动作
-        maxQ = np.max(Q_list)  # 贪心策略
-        action_list = np.where(Q_list == maxQ)[0]  # maxQ可能对应多个action
-        action = np.random.choice(action_list)  # 从这多个action中随机选取一个
-        return action
-
-    def learn(self, obs, action, reward, next_obs, next_action, done):
-        """
-        obs: 交互前的obs s_t
-        action: 本次交互选择的action a_t
-        reward: 本次动作获得的奖励 r
-        next_obs: 本次交互后的obs s_t+1
-        next_action: 根据当前Q表格 针对next_obs会选择的动作 即：a_t+1
-        done: episode是否介绍
-        """
-        predict_Q = self.Q[obs, action]  # 预测到的下一个Q值
-        if done:  # 最后一轮迭代  没有下一个状态
-            target_Q = reward
-        else:
-            target_Q = reward + self.gamma * self.Q[next_obs, next_action]  # Sarsa
-        self.Q[obs, action] += self.lr * (target_Q - predict_Q)
-
+if __name__ == "__main__":
+    main()
