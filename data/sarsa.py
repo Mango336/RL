@@ -1,6 +1,6 @@
 import numpy as np
 import gym
-# from gridworld 
+from gridworld import CliffWakingWapper
 from sample_read_data import *
 
 
@@ -44,28 +44,3 @@ class SarsaAgent(object):
             target_Q = reward + self.gamma * self.Q[next_obs, next_action]  # Sarsa
         self.Q[obs, action] += self.lr * (target_Q - predict_Q)
 
-def run_episode(env, agent, render=False):
-    total_steps = 0  # 记录每个episode走了多少step
-    total_reward = 0
-    obs = env.reset()  # 重置环境 重新开始一个新的episode
-    action = agent.sample(obs)  # agent根据算法选择一个动作输出
-    while True:
-        next_obs, reward, done, _ = env.step(action)  # 与环境进行一个交互
-        next_action = agent.sample(next_obs)  # 根据算法选择一个动作
-        agent.learn(obs, action, reward, next_obs, next_action, done)  # 训练Sarsa
-
-        action = next_action
-        obs = next_obs  # 存储上一个观察值
-        total_reward += reward
-        total_steps += 1  # 计算step数
-        if render:
-            env.render()  # 渲染新的一帧图形
-        if done:
-            break
-    return total_reward, total_steps
-
-# if __name__ == "__main__":
-#     obs = env.reset()
-#     action = agent.sample(obs)
-#     while True:
-#
