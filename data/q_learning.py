@@ -1,5 +1,6 @@
 import gym
 from agent import Q_learningAgent
+# from gridworld import CliffWalkingWapper
 import time
 
 def run_episode(env, agent, render=False):
@@ -38,7 +39,7 @@ def test_episode(env, agent):
 
 def main():
     env = gym.make("CliffWalking-v0")
-    
+    # env = CliffWalkingWapper(env)
     agent = Q_learningAgent(obs_n=env.observation_space.n,
                             act_n=env.action_space.n,
                             learning_rate=0.1,

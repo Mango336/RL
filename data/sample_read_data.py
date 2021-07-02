@@ -1,4 +1,5 @@
 import json, time, datetime, math, csv, copy, sys
+import pandas as pd
 from dateutil.parser import parse
 
 # % read worker attribute: worker_quality
@@ -68,10 +69,11 @@ for line in project_list_lines:
             entry_info[project_id][entry_number] = {}
             entry_info[project_id][entry_number]["entry_created_at"] = parse(
                 item["entry_created_at"])  # % worker answer_time
-            entry_info[project_id][entry_number]["worker"] = int(item["author"])  # % work_id
+            entry_info[project_id][entry_number]["worker"] = int(item["id"])  # % work_id
         k += limit
     index += 1
     if index % 10 == 0 or index == list_len:
         print('\r当前读取数据进度：{0}>{1}%'.format('=' * int(index / list_len * 100), int(index / list_len * 100)), end='')
 
+pd.DataFrame(entry_info).to_csv("entry_info.csv")
 print("\nfinish read_data")
